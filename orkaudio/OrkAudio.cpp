@@ -282,7 +282,7 @@ void MainThread()
 	FilterRegistry::instance()->RegisterFilter(filter);
 	
 	// Register in-built tape processors and build the processing chain
-	OrkTrack::Initialize(CONFIG.m_trackerHostname, CONFIG.m_trackerServicename, CONFIG.m_trackerTcpPort);
+	OrkTrack::Initialize(CONFIG.m_trackerHostname, CONFIG.m_trackerServicename, CONFIG.m_trackerTcpPort,  CONFIG.m_trackerTlsPort);
 	BatchProcessing::Initialize();
 	CommandProcessing::Initialize();
 	Reporting::Initialize();
@@ -358,6 +358,14 @@ void MainThread()
 		std::thread handler(&HttpServer::Run, &httpServ);
 		handler.detach();
 	}
+#ifdef SUPPORT_TLS_SERVER
+	HttpsServer httpsServ(CONFIG.m_tlsServerPort);
+	if(httpsServ.Initialize())
+	{
+		std::thread handler(&HttpsServer::Run, &httpsServ);
+		handler.detach();
+	}
+#endif
 
 	EventStreamingServer eventStreamingSvc(CONFIG.m_eventStreamingServerPort);
 	if(eventStreamingSvc.Initialize())

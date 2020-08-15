@@ -69,6 +69,7 @@
 #include "openssl/err.h"
 #endif
 #include <log4cxx/logger.h>
+#include <regex>
 
 //============================================
 
@@ -172,7 +173,7 @@ private:
 #define AprLp locPool.GetAprPool()
 
 
-#ifndef CENTOS_6
+#ifdef SUPPORT_TLS_SERVER
 //==========================================================
 class DLL_IMPORT_EXPORT_ORKBASE OrkOpenSslSingleton : public OrkSingleton<OrkOpenSslSingleton>
 {
@@ -180,15 +181,12 @@ public:
 	OrkOpenSslSingleton();
 	~OrkOpenSslSingleton();
 	SSL_CTX* GetServerCtx();
-	SSL_CTX* GetClientCtx();
 private:
 	void SslInitialize();
 	void CreateCTXServer();
-	void CreateCTXClient();
 	void ConfigureServerCtx();
-	void ConfigureClientCtx();
 	SSL_CTX* m_serverCtx;
-	SSL_CTX* m_clientCtx;	
+	log4cxx::LoggerPtr s_log;
 };
 #endif
 
@@ -248,7 +246,7 @@ CStdString DLL_IMPORT_EXPORT_ORKBASE HexToString(const CStdString& hexInput);		/
 CStdString DLL_IMPORT_EXPORT_ORKBASE IntUnixTsToString(int ts);
 void DLL_IMPORT_EXPORT_ORKBASE StringTokenizeToList(CStdString input, std::list<CStdString>& output);
 bool DLL_IMPORT_EXPORT_ORKBASE ChopToken(CStdString &token, CStdString separator, CStdString &s);
-
+CStdString DLL_IMPORT_EXPORT_ORKBASE ReplaceRegexBy(CStdString input, CStdString pattern, CStdString replacedBy);
 void DLL_IMPORT_EXPORT_ORKBASE OrkSleepSec(unsigned int sec);
 void DLL_IMPORT_EXPORT_ORKBASE OrkSleepMs(unsigned int msec);
 void DLL_IMPORT_EXPORT_ORKBASE OrkSleepMicrSec(unsigned int microsec);
@@ -340,7 +338,7 @@ void DLL_IMPORT_EXPORT_ORKBASE GetHostFqdn(CStdString& fqdn, int size);
 class AlphaCounter
 {
 public:
-	inline AlphaCounter(int start = 0)
+	inline AlphaCounter(int start = 0, const std::string& prefix="")
 	{
 		if(start)
 		{
@@ -381,9 +379,9 @@ public:
 		return string;
 	}
 
-	inline void Reset()
+	inline void Reset(int value = 0)
 	{
-		m_counter = 0;
+		m_counter = value;
 	}
 private:
 	unsigned int m_counter;
@@ -493,4 +491,5 @@ typedef enum
 } RtpPayloadType;
 
 CStdString RtpPayloadTypeEnumToString(char pt);
+size_t DLL_IMPORT_EXPORT_ORKBASE ciFind(const std::string &Haystack, const std::string &Needle);
 #endif
