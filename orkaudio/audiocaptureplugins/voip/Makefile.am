@@ -10,3 +10,4 @@ libvoip_la_LIBADD = -lxerces-c -llog4cxx -lorkbase -lpcap
 INCLUDES = -I@top_srcdir@ -I../../../orkbasecxx -I../common -I/usr/include/apr-1 -I/usr/include/apr-1.0
 AudioCapturePluginCommon.cpp:
 	ln -s ../common/AudioCapturePluginCommon.cpp AudioCapturePluginCommon.cpp
+AUTOMAKE_OPTIONS = subdir-objects
