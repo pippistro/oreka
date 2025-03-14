@@ -333,6 +333,11 @@ void VoIpSession::ProcessDtlsHandshake(RtpPacketInfoRef& rtpPacket) {
 			if(m_dtlsContext.ExtractSrtpKeys(ssl, m_srtpClientKey, m_srtpServerKey)) {
 				m_dtlsEstablished = true;
 				LOG4CXX_INFO(s_dtlsLog, "DTLS handshake successful, SRTP keys extracted");
+				
+				// Initialize SRTP decryption with client key
+				if(!m_srtpDecryption.Initialize(m_srtpClientKey, 30)) {
+					LOG4CXX_ERROR(s_dtlsLog, "Failed to initialize SRTP decryption");
+				}
 			}
 			SSL_free(ssl);
 		}

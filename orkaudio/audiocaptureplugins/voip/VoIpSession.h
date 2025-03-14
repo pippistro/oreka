@@ -172,6 +172,7 @@ private:
 	bool m_dtlsEstablished;
 	unsigned char m_srtpClientKey[30];
 	unsigned char m_srtpServerKey[30];
+	SrtpDecryption m_srtpDecryption;
 
 	void GenerateOrkUid();
 	bool MatchesSipDomain(CStdString& domain);
