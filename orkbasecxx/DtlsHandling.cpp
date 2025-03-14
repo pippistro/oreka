@@ -33,9 +33,36 @@ bool DtlsContext::ExtractSrtpKeys(SSL* ssl, unsigned char* clientKey, unsigned c
 bool DtlsContext::IsDtls12Handshake(const unsigned char* buffer, size_t length) {
     if (length < 13) return false;
     
-    // DTLS 1.2 handshake detection
-    return (buffer[0] == 22 && // Handshake type
-            buffer[1] == 254 && // DTLS 1.0
-            buffer[2] == 255 && // Version
-            buffer[13] == 1);   // Client Hello
+    // Quick pre-check for efficiency
+    if (buffer[0] != 22) return false; // Not a handshake
+    
+    // Use OpenSSL BIO to properly identify DTLS messages
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        LOG4CXX_ERROR(s_dtlsLog, "Failed to create BIO for DTLS detection");
+        return false;
+    }
+    
+    BIO_write(bio, buffer, length);
+    SSL* ssl = SSL_new(m_ctx);
+    if (!ssl) {
+        LOG4CXX_ERROR(s_dtlsLog, "Failed to create SSL for DTLS detection");
+        BIO_free(bio);
+        return false;
+    }
+    
+    SSL_set_bio(ssl, bio, bio);
+    SSL_set_accept_state(ssl);
+    
+    // Peek at the data to see if it's a DTLS handshake
+    int ret = SSL_peek(ssl, buffer, 1);
+    int err = SSL_get_error(ssl, ret);
+    bool isDtls = (err == SSL_ERROR_WANT_READ); // This indicates it's a DTLS handshake
+    
+    if (isDtls) {
+        LOG4CXX_DEBUG(s_dtlsLog, "DTLS handshake detected");
+    }
+    
+    SSL_free(ssl); // This also frees the BIO
+    return isDtls;
 }

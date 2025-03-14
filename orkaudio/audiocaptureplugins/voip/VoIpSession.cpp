@@ -329,18 +329,42 @@ void VoIpSession::ProcessDtlsHandshake(RtpPacketInfoRef& rtpPacket) {
 
 	if(m_dtlsContext.IsDtls12Handshake(rtpPacket->m_payload, rtpPacket->m_payloadSize)) {
 		SSL* ssl = SSL_new(m_dtlsContext.GetContext());
-		if(ssl) {
-			if(m_dtlsContext.ExtractSrtpKeys(ssl, m_srtpClientKey, m_srtpServerKey)) {
-				m_dtlsEstablished = true;
-				LOG4CXX_INFO(s_dtlsLog, "DTLS handshake successful, SRTP keys extracted");
-				
-				// Initialize SRTP decryption with client key
-				if(!m_srtpDecryption.Initialize(m_srtpClientKey, 30)) {
-					LOG4CXX_ERROR(s_dtlsLog, "Failed to initialize SRTP decryption");
-				}
-			}
-			SSL_free(ssl);
+		if(!ssl) {
+			LOG4CXX_ERROR(s_dtlsLog, "Failed to create SSL for DTLS handshake");
+			return;
 		}
+		
+		BIO* rbio = BIO_new(BIO_s_mem());
+		BIO* wbio = BIO_new(BIO_s_mem());
+		
+		if(!rbio || !wbio) {
+			LOG4CXX_ERROR(s_dtlsLog, "Failed to create BIO for DTLS handshake");
+			if(rbio) BIO_free(rbio);
+			if(wbio) BIO_free(wbio);
+			SSL_free(ssl);
+			return;
+		}
+		
+		SSL_set_bio(ssl, rbio, wbio);
+		SSL_set_accept_state(ssl);
+		
+		// Process handshake data
+		BIO_write(rbio, rtpPacket->m_payload, rtpPacket->m_payloadSize);
+		SSL_do_handshake(ssl);
+		
+		if(m_dtlsContext.ExtractSrtpKeys(ssl, m_srtpClientKey, m_srtpServerKey)) {
+			m_dtlsEstablished = true;
+			LOG4CXX_INFO(s_dtlsLog, "DTLS handshake successful, SRTP keys extracted");
+			
+			// Initialize SRTP decryption with both keys
+			if(!m_srtpDecryption.Initialize(m_srtpClientKey, 30)) {
+				LOG4CXX_ERROR(s_dtlsLog, "Failed to initialize SRTP decryption with client key");
+			}
+			
+			// If needed, initialize another SRTP context for server key
+			// This depends on your architecture - you might need separate contexts for send/receive
+		}
+		SSL_free(ssl); // This also frees the BIOs
 	}
 }
 
