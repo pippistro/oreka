@@ -3751,6 +3751,16 @@ void VoIpSessions::ReportRtpPacket(RtpPacketInfoRef& rtpPacket)
 	VoIpSessionRef session;
 	CStdString logMsg;
 
+	// Try SRTP decryption if DTLS is established
+	if(m_dtlsEstablished && m_srtpDecryption) {
+		size_t packetLen = rtpPacket->m_payloadSize;
+		if(!m_srtpDecryption.DecryptRtpPacket(rtpPacket->m_payload, packetLen)) {
+			LOG4CXX_WARN(s_dtlsLog, "Failed to decrypt SRTP packet");
+			return;
+		}
+		rtpPacket->m_payloadSize = packetLen;
+	}
+
 	int sourcePort = rtpPacket->m_sourcePort;
 	int destPort = rtpPacket->m_destPort;
 	bool sourceAddressIsTracked = false;
