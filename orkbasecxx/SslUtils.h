@@ -15,6 +15,7 @@
 #define __SSL_UTILS_H__
 
 #include <openssl/ssl.h>
+#include "DtlsHandling.h"
 
 
 void LogSSLKeys(SSL *s);
