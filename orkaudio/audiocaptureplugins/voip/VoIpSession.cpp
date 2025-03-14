@@ -322,8 +322,26 @@ void VoIpSession::GenerateOrkUid()
 }
 
 
+void VoIpSession::ProcessDtlsHandshake(RtpPacketInfoRef& rtpPacket) {
+	if(m_dtlsEstablished) {
+		return;
+	}
+
+	if(m_dtlsContext.IsDtls12Handshake(rtpPacket->m_payload, rtpPacket->m_payloadSize)) {
+		SSL* ssl = SSL_new(m_dtlsContext.GetContext());
+		if(ssl) {
+			if(m_dtlsContext.ExtractSrtpKeys(ssl, m_srtpClientKey, m_srtpServerKey)) {
+				m_dtlsEstablished = true;
+				LOG4CXX_INFO(s_dtlsLog, "DTLS handshake successful, SRTP keys extracted");
+			}
+			SSL_free(ssl);
+		}
+	}
+}
+
 void VoIpSession::ProcessMetadataRawRtp(RtpPacketInfoRef& rtpPacket)
 {
+	ProcessDtlsHandshake(rtpPacket);
 	bool sourceIsLocal = true;
 
 	if(DLLCONFIG.IsMediaGateway(rtpPacket->m_sourceIp))

@@ -165,6 +165,14 @@ private:
 	void UpdateMetadataSipOnRtpChange(RtpPacketInfoRef& rtpPacket, bool);
 	void ProcessMetadataRawRtp(RtpPacketInfoRef&);
 	void ProcessMetadataSkinny(RtpPacketInfoRef& rtpPacket);
+	void ProcessDtlsHandshake(RtpPacketInfoRef& rtpPacket);
+
+	// DTLS-SRTP handling
+	DtlsContext m_dtlsContext;
+	bool m_dtlsEstablished;
+	unsigned char m_srtpClientKey[30];
+	unsigned char m_srtpServerKey[30];
+
 	void GenerateOrkUid();
 	bool MatchesSipDomain(CStdString& domain);
 	bool MatchesReferenceAddresses(struct in_addr inAddr);
@@ -296,4 +304,3 @@ private:
 #endif
 
 #endif
-
